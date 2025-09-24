@@ -514,6 +514,19 @@ export class AiSdkModel implements Model {
           }
         }
 
+        // Handle reasoning content from AI SDK models
+        const reasoningItem = resultContent.find(
+          (c: any) =>
+            c && c.type === 'reasoning' && typeof c.reasoning === 'string',
+        );
+        if (reasoningItem) {
+          output.push({
+            type: 'reasoning',
+            content: [{ type: 'input_text', text: reasoningItem.reasoning }],
+            providerData: (result as any).providerMetadata,
+          });
+        }
+
         if (span && request.tracing === true) {
           span.spanData.output = output;
         }
@@ -718,9 +731,9 @@ export class AiSdkModel implements Model {
               : ((part as any).usage?.outputTokens ?? 0);
             break;
           }
-          case 'reasoning': {
-            if (typeof (part as any).reasoning === 'string') {
-              reasoning += (part as any).reasoning;
+          case 'reasoning-delta': {
+            if (typeof (part as any).delta === 'string') {
+              reasoning += (part as any).delta;
             }
             break;
           }
@@ -749,7 +762,6 @@ export class AiSdkModel implements Model {
         outputs.push({
           type: 'reasoning',
           content: [{ type: 'input_text', text: reasoning }],
-          status: 'completed',
         });
       }
 
