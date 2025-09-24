@@ -669,6 +669,7 @@ export class AiSdkModel implements Model {
       let usageCompletionTokens = 0;
       const functionCalls: Record<string, protocol.FunctionCallItem> = {};
       let textOutput: protocol.OutputText | undefined;
+      let reasoning = '';
 
       for await (const part of stream) {
         if (!started) {
@@ -717,6 +718,12 @@ export class AiSdkModel implements Model {
               : ((part as any).usage?.outputTokens ?? 0);
             break;
           }
+          case 'reasoning': {
+            if (typeof (part as any).reasoning === 'string') {
+              reasoning += (part as any).reasoning;
+            }
+            break;
+          }
           case 'error': {
             throw part.error;
           }
@@ -736,6 +743,14 @@ export class AiSdkModel implements Model {
       }
       for (const fc of Object.values(functionCalls)) {
         outputs.push(fc);
+      }
+
+      if (reasoning) {
+        outputs.push({
+          type: 'reasoning',
+          content: [{ type: 'input_text', text: reasoning }],
+          status: 'completed',
+        });
       }
 
       const finalEvent: protocol.StreamEventResponseCompleted = {
